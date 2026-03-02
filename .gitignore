@@ -8,6 +8,10 @@ pids
 *.pid
 *.seed
 *.pid.lock
+config.yml
+docs/
+wink/
+bin/
 
 # Logs & environment
 logs
