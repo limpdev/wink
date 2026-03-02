@@ -1,0 +1,607 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+config.yaml
+go.mod
+main.go
+output.html
+styles.css
+template.html
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="config.yaml">
+title: "Workplace Solutions"
+
+sections:
+  - class: "hero"
+    id: "main-hero"
+    headings:
+      - level: 1
+        content: "Workplace Solutions"
+        class: "hero-title"
+    content: "Most frequently used resources"
+
+  - class: "content"
+    id: "about"
+    sections:
+      - class: "subsection"
+        headings:
+          - level: 3
+            content: "Administration"
+        links:
+          - href: "dummy"
+            content: "Admin Production"
+            class: "cta-button"
+            id: prodUS
+          - href: "dummy"
+            content: "Admin Production"
+            class: "cta-button"
+            id: prodUK
+      - class: "subsection"
+        headings:
+          - level: 3
+            content: "Client-Curated"
+        content: ""
+      
+      - class: "subsection"
+        headings:
+          - level: 3
+            content: "Our Technology"
+        content: "We use modern tools and frameworks."
+        links:
+          - href: "https://go.dev"
+            content: "Go Programming Language"
+            class: "external-link"
+          - href: "https://yaml.org"
+            content: "YAML Specification"
+            class: "external-link"
+
+  - id: "footer"
+    headings:
+      - level: 3
+        content: "Extras"
+    links:
+      - href: "mailto:andrew.gorbet@jpmorgan.com"
+        content: "Outlook"
+        id: "contact-email"
+</file>
+
+<file path="go.mod">
+module wink
+
+go 1.25.4
+
+require gopkg.in/yaml.v3 v3.0.1
+</file>
+
+<file path="main.go">
+package main
+
+import (
+	"html/template"
+	"log"
+	"os"
+
+	"gopkg.in/yaml.v3"
+)
+
+type Link struct {
+	Href    string `yaml:"href"`
+	Content string `yaml:"content"`
+	Class   string `yaml:"class,omitempty"`
+	ID      string `yaml:"id,omitempty"`
+}
+
+type Heading struct {
+	Level   int    `yaml:"level"`
+	Content string `yaml:"content"`
+	Class   string `yaml:"class,omitempty"`
+	ID      string `yaml:"id,omitempty"`
+}
+
+type Section struct {
+	Content  string    `yaml:"content,omitempty"`
+	Class    string    `yaml:"class,omitempty"`
+	ID       string    `yaml:"id,omitempty"`
+	Headings []Heading `yaml:"headings,omitempty"`
+	Links    []Link    `yaml:"links,omitempty"`
+	Sections []Section `yaml:"sections,omitempty"`
+}
+
+type Config struct {
+	Title    string    `yaml:"title"`
+	Sections []Section `yaml:"sections"`
+}
+
+type PageData struct {
+	Config Config
+	CSS    template.CSS
+}
+
+func main() {
+	configData, err := os.ReadFile("config.yaml")
+	if err != nil {
+		log.Fatalf("Error reading config.yaml: %v", err)
+	}
+
+	var config Config
+	err = yaml.Unmarshal(configData, &config)
+	if err != nil {
+		log.Fatalf("Error parsing config.yaml: %v", err)
+	}
+
+	cssData, err := os.ReadFile("styles.css")
+	if err != nil {
+		log.Fatalf("Error reading styles.css: %v", err)
+	}
+
+	tmplData, err := os.ReadFile("template.html")
+	if err != nil {
+		log.Fatalf("Error reading template.html: %v", err)
+	}
+
+	tmpl, err := template.New("page").Parse(string(tmplData))
+	if err != nil {
+		log.Fatalf("Error parsing template: %v", err)
+	}
+
+	outFile, err := os.Create("output.html")
+	if err != nil {
+		log.Fatalf("Error creating output file: %v", err)
+	}
+	defer outFile.Close()
+
+	pageData := PageData{
+		Config: config,
+		CSS:    template.CSS(cssData),
+	}
+
+	err = tmpl.Execute(outFile, pageData)
+	if err != nil {
+		log.Fatalf("Error executing template: %v", err)
+	}
+
+	log.Println("Successfully generated output.html")
+}
+</file>
+
+<file path="output.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Workplace Solutions</title>
+        <style>* {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          }
+
+          body {
+          font-family: Aptos, system-ui, -apple-system, sans-serif;
+          line-height: 1.4;
+          color: #d2d2d2;
+          background: linear-gradient(135deg, #22242f 0%, #151618 100%);
+          }
+
+          section {
+          padding: 2rem;
+          }
+
+          .hero {
+          background: linear-gradient(180deg, #1a1b1b 0%, #0A526400 100%);
+          color: #ccc;
+          text-align: center;
+          min-height: 75px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          }
+
+          .hero-title {
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          }
+
+          .content {
+          max-width: 1200px;
+          margin: 0 auto;
+          }
+
+          .subsection {
+          display: grid;
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background: linear-gradient(135deg, #22242f 0%, #151618 100%);
+          border-left: 4px solid #667eea;
+          border-radius: 16px;
+          }
+
+          h2 {
+          font-size: 2rem;
+          margin-bottom: 1rem;
+          color: #e2e2e2dd;
+          }
+
+          h3 {
+          font-size: 1.35rem;
+          margin-bottom: 0.5rem;
+          color: #8d8d8d;
+          }
+
+          p {
+          margin-bottom: 1rem;
+          }
+
+          a {
+          color: #667eea;
+          text-decoration: none;
+          transition: color 0.3s ease;
+          }
+
+          a:hover {
+          color: #6ba1be;
+          }
+
+          .cta-button {
+          display: inline-block;
+          padding: 0.75rem 2rem;
+          background: white;
+          color: #667eea;
+          border-radius: 11px;
+          font-weight: bold;
+          margin-top: 1rem;
+          }
+
+          .cta-button:hover {
+          background: #f8f9fa;
+          transform: translateY(-2px);
+          }
+
+          section.subsection a.external-link {
+          width: 250px;
+          margin-top: 1rem;
+          transition: all 100ms ease;
+          }
+          section.subsection a.external-link {
+          display: inline-flex;
+          justify-content: center;
+          margin-right: 1rem;
+          padding: 0.5rem 1rem;
+          color: #e2e2e2;
+          background: linear-gradient(135deg, #376696 100%, #5692cf 0%);
+          border-radius: 11px;
+          }
+          section.subsection a.external-link:hover {
+          transform: translateY(-2px);
+          color: #f2f2f2;
+          background: linear-gradient(135deg, #5692cf 100%, #376696 0%);
+          }
+          section.subsection a.external-link:active {
+          transform: scale(1.08,0.92);
+          }
+
+          #footer {
+          background: #2c3e5000;
+          color: #b3b3b3;
+          text-align: center;
+          display: flex;
+          height: 100vh;
+          }
+
+          #footer h2 {
+          color: #b3b3b3;
+          font-variant: small-caps;
+          }
+
+          #footer a {
+          color: #3498db;
+          margin: 0 1rem;
+          }
+
+          #footer a:hover {
+          color: #2980b9;
+        }</style>
+      </head>
+      <body>
+
+
+        <section class="hero" id="main-hero">
+
+
+          <h1 class="hero-title">Workplace Solutions</h1>
+
+
+          <p>Most frequently used resources</p>
+
+
+        </section>
+
+        <section class="content" id="about">
+
+
+          <section class="subsection">
+
+
+            <h3>Administration</h3>
+
+
+            <a href="dummy" class="cta-button" id="prodUS">Admin Production</a>
+
+
+            <a href="dummy" class="cta-button" id="prodUK">Admin Production</a>
+
+
+          </section>
+
+          <section class="subsection">
+
+
+            <h3>Client-Curated</h3>
+
+
+          </section>
+
+          <section class="subsection">
+
+
+            <h3>Our Technology</h3>
+
+
+            <p>We use modern tools and frameworks.</p>
+
+
+            <a href="https://go.dev" class="external-link">Go Programming Language</a>
+
+
+            <a href="https://yaml.org" class="external-link">YAML Specification</a>
+
+
+          </section>
+
+
+        </section>
+
+        <section id="footer">
+
+
+          <h3>Extras</h3>
+
+
+          <a href="mailto:andrew.gorbet@jpmorgan.com" id="contact-email">Outlook</a>
+
+
+        </section>
+
+
+      </body>
+    </html>
+</file>
+
+<file path="styles.css">
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Aptos, system-ui, -apple-system, sans-serif;
+    line-height: 1.4;
+    color: #d2d2d2;
+    background: linear-gradient(135deg, #22242f 0%, #151618 100%);
+}
+
+section {
+    padding: 2rem;
+}
+
+.hero {
+    background: linear-gradient(180deg, #1a1b1b 0%, #0A526400 100%);
+    color: #ccc;
+    text-align: center;
+    min-height: 75px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.subsection {
+    display: grid;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #22242f 0%, #151618 100%);
+    border-left: 4px solid #667eea;
+    border-radius: 16px;
+}
+
+h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #e2e2e2dd;
+}
+
+h3 {
+    font-size: 1.35rem;
+    margin-bottom: 0.5rem;
+    color: #8d8d8d;
+}
+
+p {
+    margin-bottom: 1rem;
+}
+
+a {
+    color: #667eea;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #6ba1be;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    background: white;
+    color: #667eea;
+    border-radius: 11px;
+    font-weight: bold;
+    margin-top: 1rem;
+}
+
+.cta-button:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+section.subsection a.external-link {
+    width: 250px;
+    margin-top: 1rem;
+    transition: all 100ms ease;
+}
+section.subsection a.external-link {
+    display: inline-flex;
+    justify-content: center;
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    color: #e2e2e2;
+    background: linear-gradient(135deg, #376696 100%, #5692cf 0%);
+    border-radius: 11px;
+}
+section.subsection a.external-link:hover {
+    transform: translateY(-2px);
+    color: #f2f2f2;
+    background: linear-gradient(135deg, #5692cf 100%, #376696 0%);
+}
+section.subsection a.external-link:active {
+    transform: scale(1.08,0.92);
+}
+
+#footer {
+    background: #2c3e5000;
+    color: #b3b3b3;
+    text-align: center;
+    display: flex;
+    height: 100vh;
+}
+
+#footer h2 {
+    color: #b3b3b3;
+    font-variant: small-caps;
+}
+
+#footer a {
+    color: #3498db;
+    margin: 0 1rem;
+}
+
+#footer a:hover {
+    color: #2980b9;
+}
+</file>
+
+<file path="template.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{.Config.Title}}</title>
+        <style>{{.CSS}}</style>
+      </head>
+      <body>
+        {{template "sections" .Config.Sections}}
+      </body>
+    </html>
+
+    {{define "sections"}}
+    {{range .}}
+    <section{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>
+      {{range .Headings}}
+      {{template "heading" .}}
+      {{end}}
+      {{if .Content}}
+      <p>{{.Content}}</p>
+      {{end}}
+      {{range .Links}}
+      {{template "link" .}}
+      {{end}}
+      {{if .Sections}}
+      {{template "sections" .Sections}}
+      {{end}}
+    </section>
+    {{end}}
+    {{end}}
+
+    {{define "heading"}}
+    {{if eq .Level 1}}<h1{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h1>{{end}}
+    {{if eq .Level 2}}<h2{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h2>{{end}}
+    {{if eq .Level 3}}<h3{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h3>{{end}}
+    {{if eq .Level 4}}<h4{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h4>{{end}}
+    {{if eq .Level 5}}<h5{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h5>{{end}}
+    {{if eq .Level 6}}<h6{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</h6>{{end}}
+    {{end}}
+
+    {{define "link"}}
+    <a href="{{.Href}}"{{if .Class}} class="{{.Class}}"{{end}}{{if .ID}} id="{{.ID}}"{{end}}>{{.Content}}</a>
+    {{end}}
+</file>
+
+</files>
