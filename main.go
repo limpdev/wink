@@ -1,11 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"os"
-
-	"gopkg.in/yaml.v3"
 )
 
 type Link struct {
@@ -38,11 +37,11 @@ type PageData struct {
 }
 
 func main() {
-	configData, err := os.ReadFile("config.yaml")
-	onErr(err, "Error reading config.yaml")
+	configData, err := os.ReadFile("config.json")
+	onErr(err, "Error reading config.json")
 	var config Config
-	err = yaml.Unmarshal(configData, &config)
-	onErr(err, "Error parsing config.yaml")
+	err = json.Unmarshal(configData, &config)
+	onErr(err, "Error parsing config.json")
 	cssData, err := os.ReadFile("styles.css")
 	onErr(err, "Error reading styles.css")
 	tmplData, err := os.ReadFile("aio.html")
