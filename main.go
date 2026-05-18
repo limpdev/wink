@@ -1,18 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	stdhtml "html"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"golang.org/x/net/html"
 )
 
 // ─── Data Types ───────────────────────────────────────────────────────────────
@@ -42,6 +42,15 @@ type PageData struct {
 	Config Config
 	CSS    template.CSS
 }
+
+// ─── Bookmark Regexes ─────────────────────────────────────────────────────────
+
+var (
+	reH3     = regexp.MustCompile(`(?i)<H3[^>]*>(.*?)</H3>`)
+	reA      = regexp.MustCompile(`(?i)<A\s[^>]*HREF="([^"]*)"[^>]*>(.*?)</A>`)
+	reDLOpen = regexp.MustCompile(`(?i)<DL\b`)
+	reDLEnd  = regexp.MustCompile(`(?i)</DL\b`)
+)
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -103,16 +112,16 @@ func onErr(err error, msg string) {
 
 // ─── Bookmarks Parser ─────────────────────────────────────────────────────────
 //
-// Chrome's export is the legacy Netscape bookmark format — not well-formed XML,
-// so we drive the html.Tokenizer directly rather than relying on the tree
-// builder.  The structure we care about:
+// Chrome's export is the legacy Netscape bookmark format — one logical element
+// per line, so a line-by-line scanner + targeted regexes is both simpler and
+// sufficient.  The structure we care about:
 //
-//   <DL>
+//   <DL><p>
 //     <DT><H3>Folder name</H3>        ← folder header
-//     <DL>                            ← folder contents follow immediately
+//     <DL><p>                         ← folder contents follow immediately
 //       <DT><A HREF="...">Name</A>    ← bookmark
 //       <DT><H3>Sub-folder</H3>       ← nested folder (also becomes a section)
-//       <DL> ... </DL>
+//       <DL><p> ... </DL>
 //     </DL>
 //   </DL>
 //
@@ -121,7 +130,7 @@ func onErr(err error, msg string) {
 // invalidating any stored pointer.
 
 func parseBookmarks(data []byte) (Config, error) {
-	z := html.NewTokenizer(bytes.NewReader(data))
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 
 	var sections []Section
 	// idxStack tracks which section was active before we entered each <DL>.
@@ -129,92 +138,58 @@ func parseBookmarks(data []byte) (Config, error) {
 	idxStack := []int{}
 	curIdx := -1
 
-	inH3 := false
-	inA := false
-
-	// pendingFolder holds a folder name we read from an <H3> while waiting to
-	// see the <DL> that is its content container.  They are always siblings in
+	// pendingFolder holds a folder name read from an <H3> while waiting for
+	// the <DL> that is its content container — always the next sibling in
 	// Chrome's format.
 	pendingFolder := ""
 
-	var curLink Link
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 
-	for {
-		tt := z.Next()
-		if tt == html.ErrorToken {
-			break // EOF or unrecoverable error — either way we're done
-		}
+		switch {
+		case reDLEnd.MatchString(line):
+			if len(idxStack) > 0 {
+				curIdx = idxStack[len(idxStack)-1]
+				idxStack = idxStack[:len(idxStack)-1]
+			} else {
+				curIdx = -1
+			}
 
-		tok := z.Token()
-		tag := strings.ToLower(tok.Data)
-
-		switch tt {
-		case html.StartTagToken:
-			switch tag {
-			case "h3":
-				inH3 = true
+		case reDLOpen.MatchString(line):
+			if pendingFolder != "" {
+				sections = append(sections, Section{
+					ID:    uniqueSectionID(pendingFolder, sections),
+					Label: pendingFolder,
+					Tag:   guessTag(pendingFolder),
+				})
+				idxStack = append(idxStack, curIdx)
+				curIdx = len(sections) - 1
 				pendingFolder = ""
-
-			case "a":
-				inA = true
-				curLink = Link{}
-				for _, attr := range tok.Attr {
-					if strings.ToLower(attr.Key) == "href" {
-						curLink.Href = attr.Val
-					}
-				}
-
-			case "dl":
-				if pendingFolder != "" {
-					// This DL is the body of the folder we just saw.
-					sections = append(sections, Section{
-						ID:    uniqueSectionID(pendingFolder, sections),
-						Label: pendingFolder,
-						Tag:   guessTag(pendingFolder),
-					})
-					idxStack = append(idxStack, curIdx)
-					curIdx = len(sections) - 1
-					pendingFolder = ""
-				} else {
-					// Root DL or a DL without a preceding H3 (shouldn't happen
-					// in normal exports, but be defensive).  Push a sentinel so
-					// the matching </dl> has something to pop.
-					idxStack = append(idxStack, curIdx)
-				}
+			} else {
+				// Root DL or unexpected DL — push a sentinel so </DL> can pop.
+				idxStack = append(idxStack, curIdx)
 			}
 
-		case html.EndTagToken:
-			switch tag {
-			case "h3":
-				inH3 = false
-
-			case "a":
-				if inA && curIdx >= 0 && curLink.Name != "" && isHTTP(curLink.Href) {
-					sections[curIdx].Links = append(sections[curIdx].Links, curLink)
-				}
-				inA = false
-				curLink = Link{}
-
-			case "dl":
-				if len(idxStack) > 0 {
-					curIdx = idxStack[len(idxStack)-1]
-					idxStack = idxStack[:len(idxStack)-1]
-				} else {
-					curIdx = -1
-				}
-			}
-
-		case html.TextToken:
-			text := strings.TrimSpace(html.UnescapeString(tok.Data))
-			if text == "" {
+		default:
+			if m := reH3.FindStringSubmatch(line); m != nil {
+				pendingFolder = stdhtml.UnescapeString(m[1])
 				continue
 			}
-			if inH3 {
-				pendingFolder += text
-			} else if inA {
-				curLink.Name += text
+			if m := reA.FindStringSubmatch(line); m != nil {
+				href := m[1]
+				name := stdhtml.UnescapeString(m[2])
+				if curIdx >= 0 && isHTTP(href) && name != "" {
+					sections[curIdx].Links = append(sections[curIdx].Links, Link{
+						Name: name,
+						Href: href,
+					})
+				}
 			}
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return Config{}, err
 	}
 
 	// Drop sections that ended up with no links (e.g. pure container folders
@@ -226,10 +201,7 @@ func parseBookmarks(data []byte) (Config, error) {
 		}
 	}
 
-	return Config{
-		Title:    "Bookmarks",
-		Sections: result,
-	}, nil
+	return Config{Title: "Bookmarks", Sections: result}, nil
 }
 
 // isHTTP rejects bookmarklets (javascript:) and other non-navigable schemes.
